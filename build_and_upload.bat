@@ -41,9 +41,14 @@ echo [INFO] Auto-detecting COM port...
 set "TEMP_PIO_LIST=%TEMP%\pio_list.txt"
 "%PIO_CMD%" device list > "%TEMP_PIO_LIST%" 2>nul
 
-REM 最初のCOMポートを使用
+REM 最初のCOMポートを使用（1桁または2桁の番号に対応）
 for /f "tokens=1" %%A in ('type "%TEMP_PIO_LIST%" ^| findstr /R "^COM[0-9]"') do (
     if not defined COM_PORT set "COM_PORT=%%A"
+)
+if not defined COM_PORT (
+    for /f "tokens=1" %%A in ('type "%TEMP_PIO_LIST%" ^| findstr /R "^COM[0-9][0-9]"') do (
+        if not defined COM_PORT set "COM_PORT=%%A"
+    )
 )
 
 REM 一時ファイル削除
