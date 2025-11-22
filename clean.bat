@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 REM ========================================
 REM Pro Micro FM Drum Machine - Clean Script
 REM ========================================
@@ -9,18 +10,41 @@ echo  Clean Build Files
 echo ========================================
 echo.
 
-REM PlatformIOがインストールされているか確認
+REM PlatformIOの検索と設定
+set "PIO_CMD=pio"
+
 where pio >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] PlatformIO not found!
-    pause
-    exit /b 1
+if %ERRORLEVEL% EQU 0 goto :pio_found
+
+if exist "%USERPROFILE%\.platformio\penv\Scripts\pio.exe" (
+    set "PIO_CMD=%USERPROFILE%\.platformio\penv\Scripts\pio.exe"
+    goto :pio_found
 )
+
+for /d %%D in ("%LOCALAPPDATA%\Programs\Python\Python*") do (
+    if exist "%%D\Scripts\pio.exe" (
+        set "PIO_CMD=%%D\Scripts\pio.exe"
+        goto :pio_found
+    )
+)
+
+for /d %%D in ("%APPDATA%\Python\Python*") do (
+    if exist "%%D\Scripts\pio.exe" (
+        set "PIO_CMD=%%D\Scripts\pio.exe"
+        goto :pio_found
+    )
+)
+
+echo [ERROR] PlatformIO not found!
+pause
+exit /b 1
+
+:pio_found
 
 echo [INFO] Cleaning build files...
 echo.
 
-pio run --target clean
+"%PIO_CMD%" run --target clean
 
 if %ERRORLEVEL% EQU 0 (
     echo.
