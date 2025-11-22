@@ -38,17 +38,23 @@ if not "%1"=="" (
 REM COMポート自動検出（PlatformIO device listを使用）
 echo [INFO] Auto-detecting COM port...
 set "TEMP_PIO_LIST=%TEMP%\pio_list.txt"
+set "TEMP_COM_LIST=%TEMP%\pio_com.txt"
 "%PIO_CMD%" device list > "%TEMP_PIO_LIST%" 2>nul
 
-REM 最初のCOMポートを使用（COMで始まる行をすべて検索）
-for /f "tokens=1" %%A in ('findstr /B "COM" "%TEMP_PIO_LIST%"') do (
+REM COMポート行を抽出
+findstr /B "COM" "%TEMP_PIO_LIST%" > "%TEMP_COM_LIST%" 2>nul
+
+REM 最初のCOMポートを使用
+for /f "tokens=1" %%A in (%TEMP_COM_LIST%) do (
     if not defined COM_PORT set "COM_PORT=%%A"
 )
 
 REM 一時ファイル削除
 if exist "%TEMP_PIO_LIST%" del "%TEMP_PIO_LIST%"
+if exist "%TEMP_COM_LIST%" del "%TEMP_COM_LIST%"
 
-if not defined COM_PORT (
+REM 遅延展開を使用してCOM_PORTをチェック
+if "!COM_PORT!"=="" (
     echo [ERROR] No COM port found!
     echo.
     echo Available ports:
@@ -62,11 +68,11 @@ if not defined COM_PORT (
     exit /b 1
 )
 
-echo [INFO] Detected port: %COM_PORT%
+echo [INFO] Detected port: !COM_PORT!
 
 :port_found
 
-echo [INFO] Target port: %COM_PORT%
+echo [INFO] Target port: !COM_PORT!
 echo.
 
 REM ファームウェアの存在確認
@@ -92,11 +98,11 @@ echo Press any key when Pro Micro is in bootloader mode...
 pause >nul
 
 echo.
-echo [INFO] Uploading to %COM_PORT%...
+echo [INFO] Uploading to !COM_PORT!...
 echo.
 
 REM アップロード実行
-"%PIO_CMD%" run --target upload --upload-port %COM_PORT%
+"%PIO_CMD%" run --target upload --upload-port !COM_PORT!
 
 if %ERRORLEVEL% EQU 0 (
     echo.
@@ -107,7 +113,7 @@ if %ERRORLEVEL% EQU 0 (
     echo Pro Micro is now running FM Drum Machine!
     echo.
     echo To monitor serial output:
-    echo   monitor.bat %COM_PORT%
+    echo   monitor.bat !COM_PORT!
     echo.
 ) else (
     echo.
@@ -122,7 +128,7 @@ if %ERRORLEVEL% EQU 0 (
     echo.
     echo Try again:
     echo   1. Reset Pro Micro (RST to GND twice)
-    echo   2. Run: upload.bat %COM_PORT%
+    echo   2. Run: upload.bat !COM_PORT!
     echo.
 )
 

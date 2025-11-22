@@ -42,30 +42,20 @@ set "TEMP_PIO_LIST=%TEMP%\pio_list.txt"
 set "TEMP_COM_LIST=%TEMP%\pio_com.txt"
 "%PIO_CMD%" device list > "%TEMP_PIO_LIST%" 2>nul
 
-echo [DEBUG] Temporary file contents:
-type "%TEMP_PIO_LIST%"
-echo.
-
 REM COMポート行を抽出
 findstr /B "COM" "%TEMP_PIO_LIST%" > "%TEMP_COM_LIST%" 2>nul
 
-echo [DEBUG] Filtered COM ports:
-type "%TEMP_COM_LIST%"
-echo.
-
 REM 最初のCOMポートを使用
 for /f "tokens=1" %%A in (%TEMP_COM_LIST%) do (
-    if not defined COM_PORT (
-        set "COM_PORT=%%A"
-        echo [DEBUG] Set COM_PORT to: %%A
-    )
+    if not defined COM_PORT set "COM_PORT=%%A"
 )
 
 REM 一時ファイル削除
 if exist "%TEMP_PIO_LIST%" del "%TEMP_PIO_LIST%"
 if exist "%TEMP_COM_LIST%" del "%TEMP_COM_LIST%"
 
-if not defined COM_PORT (
+REM 遅延展開を使用してCOM_PORTをチェック
+if "!COM_PORT!"=="" (
     echo [ERROR] No COM port found!
     echo.
     echo Available ports:
@@ -79,7 +69,7 @@ if not defined COM_PORT (
     exit /b 1
 )
 
-echo [INFO] Detected port: %COM_PORT%
+echo [INFO] Detected port: !COM_PORT!
 
 :port_found
 
@@ -111,7 +101,7 @@ echo ========================================
 echo  Step 2/2: Uploading...
 echo ========================================
 echo.
-echo [INFO] Target port: %COM_PORT%
+echo [INFO] Target port: !COM_PORT!
 echo.
 echo ========================================
 echo  IMPORTANT: Reset Pro Micro Now!
@@ -126,10 +116,10 @@ echo Press any key when Pro Micro is in bootloader mode...
 pause >nul
 
 echo.
-echo [INFO] Uploading to %COM_PORT%...
+echo [INFO] Uploading to !COM_PORT!...
 echo.
 
-"%PIO_CMD%" run --target upload --upload-port %COM_PORT%
+"%PIO_CMD%" run --target upload --upload-port !COM_PORT!
 
 if %ERRORLEVEL% EQU 0 (
     echo.

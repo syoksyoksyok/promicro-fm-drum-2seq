@@ -38,17 +38,23 @@ if not "%1"=="" (
 REM COMポート自動検出（PlatformIO device listを使用）
 echo [INFO] Auto-detecting COM port...
 set "TEMP_PIO_LIST=%TEMP%\pio_list.txt"
+set "TEMP_COM_LIST=%TEMP%\pio_com.txt"
 "%PIO_CMD%" device list > "%TEMP_PIO_LIST%" 2>nul
 
-REM 最初のCOMポートを使用（COMで始まる行をすべて検索）
-for /f "tokens=1" %%A in ('findstr /B "COM" "%TEMP_PIO_LIST%"') do (
+REM COMポート行を抽出
+findstr /B "COM" "%TEMP_PIO_LIST%" > "%TEMP_COM_LIST%" 2>nul
+
+REM 最初のCOMポートを使用
+for /f "tokens=1" %%A in (%TEMP_COM_LIST%) do (
     if not defined COM_PORT set "COM_PORT=%%A"
 )
 
 REM 一時ファイル削除
 if exist "%TEMP_PIO_LIST%" del "%TEMP_PIO_LIST%"
+if exist "%TEMP_COM_LIST%" del "%TEMP_COM_LIST%"
 
-if not defined COM_PORT (
+REM 遅延展開を使用してCOM_PORTをチェック
+if "!COM_PORT!"=="" (
     echo [ERROR] No COM port found!
     echo.
     echo Available ports:
@@ -62,11 +68,11 @@ if not defined COM_PORT (
     exit /b 1
 )
 
-echo [INFO] Detected port: %COM_PORT%
+echo [INFO] Detected port: !COM_PORT!
 
 :port_found
 
-echo [INFO] Monitoring port: %COM_PORT%
+echo [INFO] Monitoring port: !COM_PORT!
 echo [INFO] Baud rate: 115200
 echo.
 echo Press Ctrl+C to exit
@@ -74,7 +80,7 @@ echo.
 echo ========================================
 echo.
 
-"%PIO_CMD%" device monitor --port %COM_PORT% --baud 115200
+"%PIO_CMD%" device monitor --port !COM_PORT! --baud 115200
 
 echo.
 echo Serial monitor closed.
