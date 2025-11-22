@@ -12,18 +12,15 @@ PowerShellまたはコマンドプロンプトを開いて実行:
 pip install platformio
 ```
 
-### 2. プロジェクトをダウンロード
+### 2. プロジェクトディレクトリへ移動
+
+コマンドプロンプトまたはPowerShellを開いて:
 
 ```cmd
-git clone https://github.com/syoksyoksyok/promicro-fm-drum-2seq.git
-cd promicro-fm-drum-2seq
+cd C:\Users\Administrator\Documents\Arduino\Pro_Micro\promicro-fm-drum-2seq
 ```
 
-または、ZIPをダウンロードして解凍してから:
-
-```cmd
-cd C:\path\to\promicro-fm-drum-2seq
-```
+※ プロジェクトを別の場所に配置している場合は、そのパスに変更してください
 
 ### 3. ビルド
 
@@ -112,7 +109,7 @@ Pro Micro D5 ───[1kΩ]─┬─── CH1 Audio Out
 ## ワンライナー（全部まとめて実行）
 
 ```cmd
-pip install platformio && cd promicro-fm-drum-2seq && build.bat && upload.bat COM3
+pip install platformio && cd C:\Users\Administrator\Documents\Arduino\Pro_Micro\promicro-fm-drum-2seq && build.bat && upload.bat COM3
 ```
 
 ※ COM3は実際のポート番号に変更してください
