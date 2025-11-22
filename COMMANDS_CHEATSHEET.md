@@ -333,6 +333,60 @@ fmdrum-monitor  # モニタ
 
 ---
 
+## 🔄 Git関連コマンド
+
+### 最新の変更を取得（git pull）
+
+```cmd
+cd C:\Users\Administrator\Documents\Arduino\Pro_Micro\promicro-fm-drum-2seq
+git pull origin claude/fm-drum-machine-01LVP5yJBvNCkW1WTujcN51H
+```
+
+### 現在のブランチの状態確認
+
+```cmd
+cd C:\Users\Administrator\Documents\Arduino\Pro_Micro\promicro-fm-drum-2seq
+git status
+```
+
+### 変更されたファイルの確認
+
+```cmd
+cd C:\Users\Administrator\Documents\Arduino\Pro_Micro\promicro-fm-drum-2seq
+git diff
+```
+
+### ローカルの変更を破棄して最新版に戻す
+
+```cmd
+cd C:\Users\Administrator\Documents\Arduino\Pro_Micro\promicro-fm-drum-2seq
+git reset --hard origin/claude/fm-drum-machine-01LVP5yJBvNCkW1WTujcN51H
+```
+
+### コミット履歴の確認
+
+```cmd
+cd C:\Users\Administrator\Documents\Arduino\Pro_Micro\promicro-fm-drum-2seq
+git log --oneline -10
+```
+
+### 現在のブランチ名を確認
+
+```cmd
+cd C:\Users\Administrator\Documents\Arduino\Pro_Micro\promicro-fm-drum-2seq
+git branch
+```
+
+### リモートの情報を取得（pullせずに確認のみ）
+
+```cmd
+cd C:\Users\Administrator\Documents\Arduino\Pro_Micro\promicro-fm-drum-2seq
+git fetch origin
+git log HEAD..origin/claude/fm-drum-machine-01LVP5yJBvNCkW1WTujcN51H --oneline
+```
+
+---
+
 ## 🆘 緊急時のコマンド
 
 ### Pro Microが認識しなくなった
