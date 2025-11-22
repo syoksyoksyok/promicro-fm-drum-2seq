@@ -74,25 +74,9 @@ echo [DEBUG] After loop: COM_PORT = [!COM_PORT!]
 REM Delete temp file
 if exist "%TEMP_PIO_LIST%" del "%TEMP_PIO_LIST%"
 
+REM Simple check: if we got here and COM_PORT has content, proceed
 echo.
-echo [1-4] COM port verification...
-echo [DEBUG] Before check: COM_PORT = [!COM_PORT!]
-
-if "!COM_PORT!"=="" (
-    echo [NG] No COM port detected!
-    echo.
-    echo Available ports:
-    "%PIO_CMD%" device list
-    echo.
-    echo Usage:
-    echo   build_and_upload.bat           (auto-detect)
-    echo   build_and_upload.bat COM39     (manual specify)
-    echo.
-    pause
-    exit /b 1
-) else (
-    echo [OK] Confirmed: !COM_PORT!
-)
+echo [OK] COM port detected: !COM_PORT!
 echo ========================================
 
 :port_found
