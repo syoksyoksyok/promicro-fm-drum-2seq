@@ -59,25 +59,38 @@ if not "%1"=="" (
     goto :port_found
 )
 
-REM COMポート自動検出（Arduino Leonardoを検索）
+REM COMポート自動検出
 echo [INFO] Auto-detecting COM port...
-for /f "tokens=2 delims==" %%I in ('wmic path Win32_PnPEntity where "Name like '%%Arduino Leonardo%%'" get DeviceID /value 2^>nul') do (
-    for /f "tokens=1 delims=\" %%J in ("%%I") do (
-        set "DEVICE_ID=%%I"
+
+REM 方法1: SparkFun Pro Micro VID:PIDで検出（1B4F:9205=通常, 1B4F:9206=ブートローダ）
+for /f "tokens=*" %%A in ('wmic path Win32_PnPEntity where "DeviceID like '%%VID_1B4F&PID_9205%%' or DeviceID like '%%VID_1B4F&PID_9206%%'" get Name 2^>nul ^| findstr /C:"COM"') do (
+    for /f "tokens=*" %%B in ("%%A") do (
+        for /f "tokens=1 delims=()" %%C in ("%%B") do (
+            set "TEMP_LINE=%%B"
+        )
     )
 )
 
-if defined DEVICE_ID (
-    for /f "tokens=2 delims=()" %%K in ('wmic path Win32_PnPEntity where "DeviceID='!DEVICE_ID:\=\\!'" get Name /value ^| findstr /C:"COM"') do (
-        set "COM_PORT=%%K"
+if defined TEMP_LINE (
+    for /f "tokens=2 delims=()" %%D in ("!TEMP_LINE!") do (
+        set "COM_PORT=%%D"
     )
 )
 
-REM より汎用的な検出（上記で見つからない場合）
+REM 方法2: Arduino Leonardoで検出
 if not defined COM_PORT (
-    for /f "tokens=*" %%A in ('"%PIO_CMD%" device list ^| findstr /C:"Arduino Leonardo"') do (
-        for /f "tokens=1" %%B in ("%%A") do (
+    for /f "tokens=*" %%A in ('wmic path Win32_PnPEntity where "Name like '%%Arduino Leonardo%%'" get Name 2^>nul ^| findstr /C:"COM"') do (
+        for /f "tokens=2 delims=()" %%B in ("%%A") do (
             set "COM_PORT=%%B"
+        )
+    )
+)
+
+REM 方法3: PlatformIO device listで検出
+if not defined COM_PORT (
+    for /f "tokens=*" %%A in ('"%PIO_CMD%" device list 2^>nul ^| findstr /R "^COM[0-9]"') do (
+        for /f "tokens=1" %%B in ("%%A") do (
+            if not defined COM_PORT set "COM_PORT=%%B"
         )
     )
 )
