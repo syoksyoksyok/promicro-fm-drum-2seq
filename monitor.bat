@@ -35,52 +35,28 @@ if not "%1"=="" (
     goto :port_found
 )
 
-REM COMポート自動検出
+REM COMポート自動検出（PlatformIO device listを使用）
 echo [INFO] Auto-detecting COM port...
+set "TEMP_PIO_LIST=%TEMP%\pio_list.txt"
+"%PIO_CMD%" device list > "%TEMP_PIO_LIST%" 2>nul
 
-REM 方法1: SparkFun Pro Micro VID:PIDで検出（1B4F:9205=通常, 1B4F:9206=ブートローダ）
-for /f "tokens=*" %%A in ('wmic path Win32_PnPEntity where "DeviceID like '%%VID_1B4F&PID_9205%%' or DeviceID like '%%VID_1B4F&PID_9206%%'" get Name 2^>nul ^| findstr /C:"COM"') do (
-    for /f "tokens=*" %%B in ("%%A") do (
-        for /f "tokens=1 delims=()" %%C in ("%%B") do (
-            set "TEMP_LINE=%%B"
-        )
-    )
+REM 最初のCOMポートを使用
+for /f "tokens=1" %%A in ('type "%TEMP_PIO_LIST%" ^| findstr /R "^COM[0-9]"') do (
+    if not defined COM_PORT set "COM_PORT=%%A"
 )
 
-if defined TEMP_LINE (
-    for /f "tokens=2 delims=()" %%D in ("!TEMP_LINE!") do (
-        set "COM_PORT=%%D"
-    )
-)
-
-REM 方法2: Arduino Leonardoで検出
-if not defined COM_PORT (
-    for /f "tokens=*" %%A in ('wmic path Win32_PnPEntity where "Name like '%%Arduino Leonardo%%'" get Name 2^>nul ^| findstr /C:"COM"') do (
-        for /f "tokens=2 delims=()" %%B in ("%%A") do (
-            set "COM_PORT=%%B"
-        )
-    )
-)
-
-REM 方法3: PlatformIO device listで検出
-if not defined COM_PORT (
-    set "TEMP_PIO_LIST=%TEMP%\pio_list.txt"
-    "%PIO_CMD%" device list > "!TEMP_PIO_LIST!" 2>nul
-    for /f "tokens=1" %%A in ('type "!TEMP_PIO_LIST!" ^| findstr /R "^COM[0-9]"') do (
-        if not defined COM_PORT set "COM_PORT=%%A"
-    )
-    if exist "!TEMP_PIO_LIST!" del "!TEMP_PIO_LIST!"
-)
+REM 一時ファイル削除
+if exist "%TEMP_PIO_LIST%" del "%TEMP_PIO_LIST%"
 
 if not defined COM_PORT (
-    echo [ERROR] Arduino Leonardo (Pro Micro) not found!
+    echo [ERROR] No COM port found!
     echo.
     echo Available ports:
     "%PIO_CMD%" device list
     echo.
     echo Usage:
     echo   monitor.bat           (auto-detect)
-    echo   monitor.bat COM25     (manual specify)
+    echo   monitor.bat COM39     (manual specify)
     echo.
     pause
     exit /b 1
