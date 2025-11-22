@@ -42,7 +42,7 @@ set "TEMP_PIO_LIST=%TEMP%\pio_list.txt"
 "%PIO_CMD%" device list > "%TEMP_PIO_LIST%" 2>nul
 
 REM 最初のCOMポートを使用（COMで始まる行をすべて検索）
-for /f "tokens=1" %%A in ('type "%TEMP_PIO_LIST%" ^| findstr /B "COM"') do (
+for /f "tokens=1" %%A in ('findstr /B "COM" "%TEMP_PIO_LIST%"') do (
     if not defined COM_PORT set "COM_PORT=%%A"
 )
 
