@@ -39,15 +39,31 @@ if not "%1"=="" (
 REM COMポート自動検出（PlatformIO device listを使用）
 echo [INFO] Auto-detecting COM port...
 set "TEMP_PIO_LIST=%TEMP%\pio_list.txt"
+set "TEMP_COM_LIST=%TEMP%\pio_com.txt"
 "%PIO_CMD%" device list > "%TEMP_PIO_LIST%" 2>nul
 
-REM 最初のCOMポートを使用（COMで始まる行をすべて検索）
-for /f "tokens=1" %%A in ('findstr /B "COM" "%TEMP_PIO_LIST%"') do (
-    if not defined COM_PORT set "COM_PORT=%%A"
+echo [DEBUG] Temporary file contents:
+type "%TEMP_PIO_LIST%"
+echo.
+
+REM COMポート行を抽出
+findstr /B "COM" "%TEMP_PIO_LIST%" > "%TEMP_COM_LIST%" 2>nul
+
+echo [DEBUG] Filtered COM ports:
+type "%TEMP_COM_LIST%"
+echo.
+
+REM 最初のCOMポートを使用
+for /f "tokens=1" %%A in (%TEMP_COM_LIST%) do (
+    if not defined COM_PORT (
+        set "COM_PORT=%%A"
+        echo [DEBUG] Set COM_PORT to: %%A
+    )
 )
 
 REM 一時ファイル削除
 if exist "%TEMP_PIO_LIST%" del "%TEMP_PIO_LIST%"
+if exist "%TEMP_COM_LIST%" del "%TEMP_COM_LIST%"
 
 if not defined COM_PORT (
     echo [ERROR] No COM port found!
