@@ -2,6 +2,11 @@
 
 Arduino Pro Micro (ATmega32U4) 向けの2チャンネル独立FMドラムマシン＆ステップシーケンサー
 
+## クイックスタート
+
+- **Windows環境の方**: [QUICKSTART_WINDOWS.md](QUICKSTART_WINDOWS.md) または [WINDOWS_BUILD.md](WINDOWS_BUILD.md)
+- **Linux/Mac環境の方**: 下記の「ビルド＆書き込み手順」を参照
+
 ## 特徴
 
 - **2チャンネル独立PWMオーディオ出力**（D5, D6）
