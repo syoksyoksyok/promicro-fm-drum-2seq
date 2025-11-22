@@ -415,6 +415,45 @@ powershell -ExecutionPolicy Bypass -File auto_upload.ps1 -ComPort COM3
 
 ---
 
+## Git関連コマンド
+
+### 最新の変更を取得（更新があった場合）
+
+```cmd
+cd C:\Users\Administrator\Documents\Arduino\Pro_Micro\promicro-fm-drum-2seq
+git pull origin claude/fm-drum-machine-01LVP5yJBvNCkW1WTujcN51H
+```
+
+### 取得後、再ビルドして書き込み
+
+```cmd
+cd C:\Users\Administrator\Documents\Arduino\Pro_Micro\promicro-fm-drum-2seq
+git pull origin claude/fm-drum-machine-01LVP5yJBvNCkW1WTujcN51H
+build.bat
+upload.bat COM3
+```
+
+### 現在の状態確認
+
+```cmd
+cd C:\Users\Administrator\Documents\Arduino\Pro_Micro\promicro-fm-drum-2seq
+git status
+```
+
+### ローカルの変更を破棄して最新版に戻す
+
+ローカルで変更したファイルを破棄して、リモートの最新版に完全に戻したい場合:
+
+```cmd
+cd C:\Users\Administrator\Documents\Arduino\Pro_Micro\promicro-fm-drum-2seq
+git reset --hard origin/claude/fm-drum-machine-01LVP5yJBvNCkW1WTujcN51H
+git clean -fd
+```
+
+**注意:** このコマンドは、ローカルの変更を完全に削除します。
+
+---
+
 ## 参考資料
 
 - **クイックスタート**: [QUICKSTART_WINDOWS.md](QUICKSTART_WINDOWS.md)

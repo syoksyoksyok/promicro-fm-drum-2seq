@@ -7,8 +7,9 @@ Arduino Pro Micro (ATmega32U4) 向けの2チャンネル独立FMドラムマシ�
 **Windows環境の方（推奨順）:**
 1. 📘 [完全セットアップガイド](SETUP_COMPLETE_GUIDE.md) - **あなたの環境専用の詳細手順**
 2. 📝 [コマンドチートシート](COMMANDS_CHEATSHEET.md) - **コピペ用コマンド集**
-3. ⚡ [クイックスタート](QUICKSTART_WINDOWS.md) - 5分で動かす最短手順
-4. 📖 [詳細ビルド手順](WINDOWS_BUILD.md) - 3つの方法とトラブルシューティング
+3. 🔄 [Gitコマンドリファレンス](GIT_COMMANDS.md) - **最新版の取得方法**
+4. ⚡ [クイックスタート](QUICKSTART_WINDOWS.md) - 5分で動かす最短手順
+5. 📖 [詳細ビルド手順](WINDOWS_BUILD.md) - 3つの方法とトラブルシューティング
 
 **Linux/Mac環境の方:**
 - 下記の「ビルド＆書き込み手順」を参照

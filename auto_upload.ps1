@@ -4,8 +4,8 @@
 # ========================================
 
 param(
-    [Parameter(Mandatory=$true)]
-    [string]$ComPort
+    [Parameter(Mandatory=$false)]
+    [string]$ComPort = ""
 )
 
 Write-Host "========================================" -ForegroundColor Cyan
@@ -14,15 +14,96 @@ Write-Host " Auto Reset and Upload Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# PlatformIOの確認
-$pioExists = Get-Command pio -ErrorAction SilentlyContinue
-if (-not $pioExists) {
+# PlatformIOの検索（フルパス使用）
+$pioCmd = $null
+
+# 優先1: .platformio フォルダ内（推奨）
+$pioPath1 = "$env:USERPROFILE\.platformio\penv\Scripts\pio.exe"
+if (Test-Path $pioPath1) {
+    $pioCmd = $pioPath1
+    Write-Host "[INFO] Found PlatformIO at: $pioCmd" -ForegroundColor Green
+}
+
+# 優先2: Microsoft Store版Python
+if (-not $pioCmd) {
+    $pythonPackages = Get-ChildItem "$env:LOCALAPPDATA\Packages\PythonSoftwareFoundation.Python.*" -ErrorAction SilentlyContinue
+    foreach ($pkg in $pythonPackages) {
+        $pioPath = Get-ChildItem "$($pkg.FullName)\LocalCache\local-packages\Python*\Scripts\pio.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($pioPath) {
+            $pioCmd = $pioPath.FullName
+            Write-Host "[INFO] Found PlatformIO at: $pioCmd" -ForegroundColor Green
+            break
+        }
+    }
+}
+
+# 優先3: 標準Python Scriptsフォルダ
+if (-not $pioCmd) {
+    $pythonDirs = Get-ChildItem "$env:LOCALAPPDATA\Programs\Python\Python*" -ErrorAction SilentlyContinue
+    foreach ($dir in $pythonDirs) {
+        $pioPath = "$($dir.FullName)\Scripts\pio.exe"
+        if (Test-Path $pioPath) {
+            $pioCmd = $pioPath
+            Write-Host "[INFO] Found PlatformIO at: $pioCmd" -ForegroundColor Green
+            break
+        }
+    }
+}
+
+if (-not $pioCmd) {
     Write-Host "[ERROR] PlatformIO not found!" -ForegroundColor Red
     Write-Host "Please install PlatformIO first:" -ForegroundColor Yellow
     Write-Host "  pip install platformio" -ForegroundColor Yellow
     Write-Host ""
     Read-Host "Press Enter to exit"
     exit 1
+}
+
+# COMポート自動検出
+if ([string]::IsNullOrEmpty($ComPort)) {
+    Write-Host "[INFO] Auto-detecting COM port..." -ForegroundColor Yellow
+
+    # WMIでArduino Leonardoを検索
+    $devices = Get-WmiObject -Query "SELECT * FROM Win32_PnPEntity WHERE Name LIKE '%Arduino Leonardo%'" -ErrorAction SilentlyContinue
+
+    if ($devices) {
+        foreach ($device in $devices) {
+            if ($device.Name -match '(COM\d+)') {
+                $ComPort = $matches[1]
+                Write-Host "[INFO] Detected port: $ComPort" -ForegroundColor Green
+                break
+            }
+        }
+    }
+
+    # 見つからない場合はPlatformIO device listで検索
+    if ([string]::IsNullOrEmpty($ComPort)) {
+        $deviceList = & $pioCmd device list 2>$null
+        foreach ($line in $deviceList) {
+            if ($line -match 'Arduino Leonardo' -and $line -match '^(COM\d+)') {
+                $ComPort = $matches[1]
+                Write-Host "[INFO] Detected port: $ComPort" -ForegroundColor Green
+                break
+            }
+        }
+    }
+
+    # それでも見つからない場合はエラー
+    if ([string]::IsNullOrEmpty($ComPort)) {
+        Write-Host "[ERROR] Arduino Leonardo (Pro Micro) not found!" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Available ports:" -ForegroundColor Yellow
+        & $pioCmd device list
+        Write-Host ""
+        Write-Host "Usage:" -ForegroundColor Yellow
+        Write-Host "  .\auto_upload.ps1           (auto-detect)" -ForegroundColor White
+        Write-Host "  .\auto_upload.ps1 COM25     (manual specify)" -ForegroundColor White
+        Write-Host ""
+        Read-Host "Press Enter to exit"
+        exit 1
+    }
+} else {
+    Write-Host "[INFO] Using specified port: $ComPort" -ForegroundColor Green
 }
 
 # ファームウェアの存在確認
@@ -90,7 +171,7 @@ Write-Host "[INFO] Starting upload to $ComPort..." -ForegroundColor Yellow
 Write-Host ""
 
 # アップロード実行
-$uploadResult = & pio run --target upload --upload-port $ComPort
+$uploadResult = & $pioCmd run --target upload --upload-port $ComPort
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
@@ -111,7 +192,7 @@ if ($LASTEXITCODE -eq 0) {
         Write-Host "[INFO] Opening serial monitor (Press Ctrl+C to exit)..." -ForegroundColor Yellow
         Write-Host ""
         Start-Sleep -Seconds 1
-        & pio device monitor --port $ComPort --baud 115200
+        & $pioCmd device monitor --port $ComPort --baud 115200
     }
 
 } else {
