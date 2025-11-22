@@ -11,41 +11,18 @@ echo  Build and Upload Script
 echo ========================================
 echo.
 
-REM PlatformIOの検索と設定（フルパス使用）
-REM 優先1: .platformio フォルダ内（推奨）
-if exist "%USERPROFILE%\.platformio\penv\Scripts\pio.exe" (
-    set "PIO_CMD=%USERPROFILE%\.platformio\penv\Scripts\pio.exe"
-    goto :pio_found
+REM PlatformIOのフルパス指定
+set "PIO_CMD=C:\Users\Administrator\.platformio\penv\Scripts\pio.exe"
+
+if not exist "%PIO_CMD%" (
+    echo [ERROR] PlatformIO not found at: %PIO_CMD%
+    echo.
+    echo Please check PlatformIO installation.
+    pause
+    exit /b 1
 )
 
-REM 優先2: Microsoft Store版Python
-for /d %%D in ("%LOCALAPPDATA%\Packages\PythonSoftwareFoundation.Python.*") do (
-    if exist "%%D\LocalCache\local-packages\Python*\Scripts\pio.exe" (
-        for %%F in ("%%D\LocalCache\local-packages\Python*\Scripts\pio.exe") do (
-            set "PIO_CMD=%%F"
-            goto :pio_found
-        )
-    )
-)
-
-REM 優先3: 標準Python Scriptsフォルダ
-for /d %%D in ("%LOCALAPPDATA%\Programs\Python\Python*") do (
-    if exist "%%D\Scripts\pio.exe" (
-        set "PIO_CMD=%%D\Scripts\pio.exe"
-        goto :pio_found
-    )
-)
-
-for /d %%D in ("%APPDATA%\Python\Python*") do (
-    if exist "%%D\Scripts\pio.exe" (
-        set "PIO_CMD=%%D\Scripts\pio.exe"
-        goto :pio_found
-    )
-)
-
-echo [ERROR] PlatformIO not found!
-pause
-exit /b 1
+echo [INFO] Using PlatformIO: %PIO_CMD%
 
 :pio_found
 
@@ -59,27 +36,41 @@ if not "%1"=="" (
     goto :port_found
 )
 
-REM COMポート自動検出（Arduino Leonardoを検索）
+REM COMポート自動検出
 echo [INFO] Auto-detecting COM port...
-for /f "tokens=2 delims==" %%I in ('wmic path Win32_PnPEntity where "Name like '%%Arduino Leonardo%%'" get DeviceID /value 2^>nul') do (
-    for /f "tokens=1 delims=\" %%J in ("%%I") do (
-        set "DEVICE_ID=%%I"
+
+REM 方法1: SparkFun Pro Micro VID:PIDで検出（1B4F:9205=通常, 1B4F:9206=ブートローダ）
+for /f "tokens=*" %%A in ('wmic path Win32_PnPEntity where "DeviceID like '%%VID_1B4F&PID_9205%%' or DeviceID like '%%VID_1B4F&PID_9206%%'" get Name 2^>nul ^| findstr /C:"COM"') do (
+    for /f "tokens=*" %%B in ("%%A") do (
+        for /f "tokens=1 delims=()" %%C in ("%%B") do (
+            set "TEMP_LINE=%%B"
+        )
     )
 )
 
-if defined DEVICE_ID (
-    for /f "tokens=2 delims=()" %%K in ('wmic path Win32_PnPEntity where "DeviceID='!DEVICE_ID:\=\\!'" get Name /value ^| findstr /C:"COM"') do (
-        set "COM_PORT=%%K"
+if defined TEMP_LINE (
+    for /f "tokens=2 delims=()" %%D in ("!TEMP_LINE!") do (
+        set "COM_PORT=%%D"
     )
 )
 
-REM より汎用的な検出（上記で見つからない場合）
+REM 方法2: Arduino Leonardoで検出
 if not defined COM_PORT (
-    for /f "tokens=*" %%A in ('"%PIO_CMD%" device list ^| findstr /C:"Arduino Leonardo"') do (
-        for /f "tokens=1" %%B in ("%%A") do (
+    for /f "tokens=*" %%A in ('wmic path Win32_PnPEntity where "Name like '%%Arduino Leonardo%%'" get Name 2^>nul ^| findstr /C:"COM"') do (
+        for /f "tokens=2 delims=()" %%B in ("%%A") do (
             set "COM_PORT=%%B"
         )
     )
+)
+
+REM 方法3: PlatformIO device listで検出
+if not defined COM_PORT (
+    set "TEMP_PIO_LIST=%TEMP%\pio_list.txt"
+    "%PIO_CMD%" device list > "!TEMP_PIO_LIST!" 2>nul
+    for /f "tokens=1" %%A in ('type "!TEMP_PIO_LIST!" ^| findstr /R "^COM[0-9]"') do (
+        if not defined COM_PORT set "COM_PORT=%%A"
+    )
+    if exist "!TEMP_PIO_LIST!" del "!TEMP_PIO_LIST!"
 )
 
 if not defined COM_PORT (

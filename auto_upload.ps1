@@ -63,26 +63,40 @@ if (-not $pioCmd) {
 if ([string]::IsNullOrEmpty($ComPort)) {
     Write-Host "[INFO] Auto-detecting COM port..." -ForegroundColor Yellow
 
-    # WMIでArduino Leonardoを検索
-    $devices = Get-WmiObject -Query "SELECT * FROM Win32_PnPEntity WHERE Name LIKE '%Arduino Leonardo%'" -ErrorAction SilentlyContinue
+    # 方法1: SparkFun Pro Micro VID:PIDで検出（1B4F:9205=通常, 1B4F:9206=ブートローダ）
+    $devices = Get-WmiObject -Query "SELECT * FROM Win32_PnPEntity WHERE DeviceID LIKE '%VID_1B4F&PID_9205%' OR DeviceID LIKE '%VID_1B4F&PID_9206%'" -ErrorAction SilentlyContinue
 
     if ($devices) {
         foreach ($device in $devices) {
-            if ($device.Name -match '(COM\d+)') {
-                $ComPort = $matches[1]
-                Write-Host "[INFO] Detected port: $ComPort" -ForegroundColor Green
+            if ($device.Name -match '\(COM(\d+)\)') {
+                $ComPort = "COM$($matches[1])"
+                Write-Host "[INFO] Detected SparkFun Pro Micro on: $ComPort" -ForegroundColor Green
                 break
             }
         }
     }
 
-    # 見つからない場合はPlatformIO device listで検索
+    # 方法2: Arduino Leonardoで検出
+    if ([string]::IsNullOrEmpty($ComPort)) {
+        $devices = Get-WmiObject -Query "SELECT * FROM Win32_PnPEntity WHERE Name LIKE '%Arduino Leonardo%'" -ErrorAction SilentlyContinue
+        if ($devices) {
+            foreach ($device in $devices) {
+                if ($device.Name -match '\(COM(\d+)\)') {
+                    $ComPort = "COM$($matches[1])"
+                    Write-Host "[INFO] Detected Arduino Leonardo on: $ComPort" -ForegroundColor Green
+                    break
+                }
+            }
+        }
+    }
+
+    # 方法3: PlatformIO device listで最初のCOMポートを使用
     if ([string]::IsNullOrEmpty($ComPort)) {
         $deviceList = & $pioCmd device list 2>$null
         foreach ($line in $deviceList) {
-            if ($line -match 'Arduino Leonardo' -and $line -match '^(COM\d+)') {
+            if ($line -match '^(COM\d+)') {
                 $ComPort = $matches[1]
-                Write-Host "[INFO] Detected port: $ComPort" -ForegroundColor Green
+                Write-Host "[INFO] Detected COM port: $ComPort" -ForegroundColor Green
                 break
             }
         }
@@ -90,14 +104,14 @@ if ([string]::IsNullOrEmpty($ComPort)) {
 
     # それでも見つからない場合はエラー
     if ([string]::IsNullOrEmpty($ComPort)) {
-        Write-Host "[ERROR] Arduino Leonardo (Pro Micro) not found!" -ForegroundColor Red
+        Write-Host "[ERROR] No COM port found!" -ForegroundColor Red
         Write-Host ""
         Write-Host "Available ports:" -ForegroundColor Yellow
         & $pioCmd device list
         Write-Host ""
         Write-Host "Usage:" -ForegroundColor Yellow
         Write-Host "  .\auto_upload.ps1           (auto-detect)" -ForegroundColor White
-        Write-Host "  .\auto_upload.ps1 COM25     (manual specify)" -ForegroundColor White
+        Write-Host "  .\auto_upload.ps1 COM39     (manual specify)" -ForegroundColor White
         Write-Host ""
         Read-Host "Press Enter to exit"
         exit 1
