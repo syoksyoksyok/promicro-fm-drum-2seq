@@ -62,4 +62,7 @@ void loadDemoPattern();
 // 再生/停止のトグル
 void togglePlayback();
 
+// 現在のステップ位置を取得
+uint8_t getCurrentStep(uint8_t track);
+
 #endif // SEQUENCER_H

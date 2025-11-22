@@ -204,3 +204,12 @@ void togglePlayback() {
     tickCounter = 0;
   }
 }
+
+// =============================================================================
+// 現在のステップ位置を取得
+// =============================================================================
+
+uint8_t getCurrentStep(uint8_t track) {
+  if (track >= NUM_TRACKS) return 0;
+  return currentStep[track];
+}

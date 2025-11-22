@@ -18,6 +18,11 @@
 // ノブ（アナログ入力）
 #define PIN_KNOB_DECAY A0      // ディケイ調整ノブ
 
+// LED（BPM表示用）
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 13         // Pro Micro内蔵LED
+#endif
+
 // =============================================================================
 // ボタンデバウンス用変数
 // =============================================================================
@@ -36,6 +41,14 @@ static uint16_t knobSmoothed = 512;
 static const uint8_t knobSmoothFactor = 8; // 移動平均のファクター
 
 // =============================================================================
+// LED点滅用変数
+// =============================================================================
+
+static uint8_t lastStep = 0;
+static unsigned long ledOnTime = 0;
+static const unsigned long ledBlinkDuration = 50; // LED点灯時間（ms）
+
+// =============================================================================
 // 初期化
 // =============================================================================
 
@@ -52,6 +65,10 @@ void setup() {
 
   // アナログピンの設定
   pinMode(PIN_KNOB_DECAY, INPUT);
+
+  // LED（BPM表示）の設定
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
 
   // ランダムシードの初期化（アナログノイズから）
   randomSeed(analogRead(A1));
@@ -132,6 +149,35 @@ void handleKnob() {
 }
 
 // =============================================================================
+// LED点滅処理（BPM表示）
+// =============================================================================
+
+void handleLED() {
+  if (!isPlaying) {
+    // 停止中はLED消灯
+    digitalWrite(LED_BUILTIN, LOW);
+    return;
+  }
+
+  unsigned long currentTime = millis();
+
+  // 現在のステップを取得（Track 0を基準）
+  uint8_t currentStep = getCurrentStep(0);
+
+  // ステップが変わったらLED点灯
+  if (currentStep != lastStep) {
+    lastStep = currentStep;
+    ledOnTime = currentTime;
+    digitalWrite(LED_BUILTIN, HIGH);
+  }
+
+  // 一定時間経過したらLED消灯
+  if (currentTime - ledOnTime >= ledBlinkDuration) {
+    digitalWrite(LED_BUILTIN, LOW);
+  }
+}
+
+// =============================================================================
 // メインループ
 // =============================================================================
 
@@ -150,6 +196,9 @@ void loop() {
     lastKnobRead = currentTime;
     handleKnob();
   }
+
+  // LED点滅処理（BPM表示）
+  handleLED();
 
   // CPU負荷軽減のため、短いディレイ
   delay(1);
