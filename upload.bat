@@ -49,21 +49,56 @@ exit /b 1
 
 :pio_found
 
-REM 引数チェック
-if "%1"=="" (
-    echo [ERROR] Please specify COM port!
-    echo.
-    echo Usage:
-    echo   upload.bat COM3
+REM COMポート自動検出
+set "COM_PORT="
+
+REM 引数でCOMポートが指定されている場合はそれを使用
+if not "%1"=="" (
+    set "COM_PORT=%1"
+    echo [INFO] Using specified port: %COM_PORT%
+    goto :port_found
+)
+
+REM COMポート自動検出（Arduino Leonardoを検索）
+echo [INFO] Auto-detecting COM port...
+for /f "tokens=2 delims==" %%I in ('wmic path Win32_PnPEntity where "Name like '%%Arduino Leonardo%%'" get DeviceID /value 2^>nul') do (
+    for /f "tokens=1 delims=\" %%J in ("%%I") do (
+        set "DEVICE_ID=%%I"
+    )
+)
+
+if defined DEVICE_ID (
+    for /f "tokens=2 delims=()" %%K in ('wmic path Win32_PnPEntity where "DeviceID='!DEVICE_ID:\=\\!'" get Name /value ^| findstr /C:"COM"') do (
+        set "COM_PORT=%%K"
+    )
+)
+
+REM より汎用的な検出（上記で見つからない場合）
+if not defined COM_PORT (
+    for /f "tokens=*" %%A in ('"%PIO_CMD%" device list ^| findstr /C:"Arduino Leonardo"') do (
+        for /f "tokens=1" %%B in ("%%A") do (
+            set "COM_PORT=%%B"
+        )
+    )
+)
+
+if not defined COM_PORT (
+    echo [ERROR] Arduino Leonardo (Pro Micro) not found!
     echo.
     echo Available ports:
     "%PIO_CMD%" device list
+    echo.
+    echo Usage:
+    echo   upload.bat           (auto-detect)
+    echo   upload.bat COM25     (manual specify)
     echo.
     pause
     exit /b 1
 )
 
-set COM_PORT=%1
+echo [INFO] Detected port: %COM_PORT%
+
+:port_found
 
 echo [INFO] Target port: %COM_PORT%
 echo.
