@@ -87,11 +87,12 @@ if not defined COM_PORT (
 
 REM 方法3: PlatformIO device listで検出
 if not defined COM_PORT (
-    for /f "tokens=*" %%A in ('"%PIO_CMD%" device list 2^>nul ^| findstr /R "^COM[0-9]"') do (
-        for /f "tokens=1" %%B in ("%%A") do (
-            if not defined COM_PORT set "COM_PORT=%%B"
-        )
+    set "TEMP_PIO_LIST=%TEMP%\pio_list.txt"
+    "%PIO_CMD%" device list > "!TEMP_PIO_LIST!" 2>nul
+    for /f "tokens=1" %%A in ('type "!TEMP_PIO_LIST!" ^| findstr /R "^COM[0-9]"') do (
+        if not defined COM_PORT set "COM_PORT=%%A"
     )
+    if exist "!TEMP_PIO_LIST!" del "!TEMP_PIO_LIST!"
 )
 
 if not defined COM_PORT (
