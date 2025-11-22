@@ -59,20 +59,25 @@ echo ----------------------------------------
 
 echo.
 echo [1-3] Extracting COM port...
-for /f "delims=" %%A in ('findstr /B "COM" "%TEMP_PIO_LIST%"') do (
+echo [DEBUG] Before loop: COM_PORT = [!COM_PORT!]
+
+for /f "tokens=1" %%A in ('findstr /B "COM" "%TEMP_PIO_LIST%"') do (
     if "!COM_PORT!"=="" (
-        for /f "tokens=1" %%B in ("%%A") do (
-            set "COM_PORT=%%B"
-            echo [OK] Selected: %%B
-        )
+        set "COM_PORT=%%A"
+        echo [OK] Selected: %%A
+        echo [DEBUG] Inside loop: COM_PORT = [%%A]
     )
 )
+
+echo [DEBUG] After loop: COM_PORT = [!COM_PORT!]
 
 REM Delete temp file
 if exist "%TEMP_PIO_LIST%" del "%TEMP_PIO_LIST%"
 
 echo.
 echo [1-4] COM port verification...
+echo [DEBUG] Before check: COM_PORT = [!COM_PORT!]
+
 if "!COM_PORT!"=="" (
     echo [NG] No COM port detected!
     echo.
