@@ -37,86 +37,128 @@ if not "%1"=="" (
 )
 
 REM COMポート自動検出（PlatformIO device listを使用）
-echo [INFO] Auto-detecting COM port...
+echo.
+echo ========================================
+echo [STEP 1] COMポート検出
+echo ========================================
 set "TEMP_PIO_LIST=%TEMP%\pio_list.txt"
 set "TEMP_COM_LIST=%TEMP%\pio_com.txt"
+
+echo [1-1] PlatformIOでデバイス一覧取得中...
 "%PIO_CMD%" device list > "%TEMP_PIO_LIST%" 2>nul
-
-REM COMポート行を抽出
-findstr /B "COM" "%TEMP_PIO_LIST%" > "%TEMP_COM_LIST%" 2>nul
-
-REM 最初のCOMポートを使用
-for /f "tokens=1" %%A in (%TEMP_COM_LIST%) do (
-    if not defined COM_PORT set "COM_PORT=%%A"
+if exist "%TEMP_PIO_LIST%" (
+    echo [OK] デバイス一覧取得成功
+) else (
+    echo [NG] デバイス一覧取得失敗
 )
+
+echo.
+echo [1-2] 検出されたデバイス:
+echo ----------------------------------------
+type "%TEMP_PIO_LIST%"
+echo ----------------------------------------
+
+echo.
+echo [1-3] COMポート行を抽出中...
+findstr /B "COM" "%TEMP_PIO_LIST%" > "%TEMP_COM_LIST%" 2>nul
+if exist "%TEMP_COM_LIST%" (
+    echo [OK] COMポート抽出成功
+) else (
+    echo [NG] COMポート抽出失敗
+)
+
+echo.
+echo [1-4] 抽出されたCOMポート:
+echo ----------------------------------------
+type "%TEMP_COM_LIST%"
+echo ----------------------------------------
+
+echo.
+echo [1-5] 最初のCOMポートを選択中...
+for /f "tokens=1" %%A in (%TEMP_COM_LIST%) do (
+    if "!COM_PORT!"=="" (
+        set "COM_PORT=%%A"
+        echo [OK] 選択: %%A
+    )
+)
+
+echo.
+echo [1-6] COMポート確定確認...
+if "!COM_PORT!"=="" (
+    echo [NG] COMポート検出失敗！
+    echo.
+    echo 利用可能なポート:
+    "%PIO_CMD%" device list
+    echo.
+    echo 使用方法:
+    echo   build_and_upload.bat           (自動検出)
+    echo   build_and_upload.bat COM39     (手動指定)
+    echo.
+    REM 一時ファイル削除
+    if exist "%TEMP_PIO_LIST%" del "%TEMP_PIO_LIST%"
+    if exist "%TEMP_COM_LIST%" del "%TEMP_COM_LIST%"
+    pause
+    exit /b 1
+) else (
+    echo [OK] 確定: !COM_PORT!
+)
+echo ========================================
 
 REM 一時ファイル削除
 if exist "%TEMP_PIO_LIST%" del "%TEMP_PIO_LIST%"
 if exist "%TEMP_COM_LIST%" del "%TEMP_COM_LIST%"
 
-REM 遅延展開を使用してCOM_PORTをチェック
-if "!COM_PORT!"=="" (
-    echo [ERROR] No COM port found!
-    echo.
-    echo Available ports:
-    "%PIO_CMD%" device list
-    echo.
-    echo Usage:
-    echo   build_and_upload.bat           (auto-detect)
-    echo   build_and_upload.bat COM39     (manual specify)
-    echo.
-    pause
-    exit /b 1
-)
-
-echo [INFO] Detected port: !COM_PORT!
-
 :port_found
 
-REM ========================================
-REM Step 1: Build
-REM ========================================
-echo ========================================
-echo  Step 1/2: Building...
-echo ========================================
 echo.
+echo ========================================
+echo [STEP 2] ビルド実行
+echo ========================================
+echo 対象: Pro Micro FM Drum Machine
+echo.
+echo [2-1] ビルド開始...
 
 "%PIO_CMD%" run
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo [ERROR] Build failed!
+    echo ========================================
+    echo [NG] ビルド失敗！
+    echo ========================================
+    echo.
+    echo エラーを確認して修正してください。
     pause
     exit /b 1
 )
 
 echo.
-echo [SUCCESS] Build completed!
+echo ========================================
+echo [OK] ビルド完了！
+echo ========================================
 echo.
 
-REM ========================================
-REM Step 2: Upload
-REM ========================================
-echo ========================================
-echo  Step 2/2: Uploading...
-echo ========================================
-echo.
-echo [INFO] Target port: !COM_PORT!
 echo.
 echo ========================================
-echo  IMPORTANT: Reset Pro Micro Now!
+echo [STEP 3] アップロード実行
 echo ========================================
+echo 対象ポート: !COM_PORT!
 echo.
-echo Please reset Pro Micro by:
-echo   1. Connect RST pin to GND twice quickly
-echo      (within 0.5 seconds interval)
-echo   2. LED should start blinking
+echo ----------------------------------------
+echo 重要: Pro Microをリセットしてください
+echo ----------------------------------------
 echo.
-echo Press any key when Pro Micro is in bootloader mode...
+echo リセット方法:
+echo   1. RSTピンをGNDに2回素早く接続
+echo      (0.5秒以内の間隔で)
+echo   2. LEDが点滅を開始
+echo.
+echo Pro Microがブートローダーモードになったら
+echo 何かキーを押してください...
 pause >nul
 
 echo.
-echo [INFO] Uploading to !COM_PORT!...
+echo [3-1] アップロード開始...
+echo ポート: !COM_PORT!
 echo.
 
 "%PIO_CMD%" run --target upload --upload-port !COM_PORT!
@@ -124,22 +166,31 @@ echo.
 if %ERRORLEVEL% EQU 0 (
     echo.
     echo ========================================
-    echo  ALL DONE! SUCCESS!
+    echo [成功] アップロード完了！
     echo ========================================
     echo.
-    echo Pro Micro is now running FM Drum Machine!
+    echo Pro Micro でFM Drum Machineが動作中です！
     echo.
-    echo To monitor serial output:
-    echo   monitor.bat %COM_PORT%
+    echo シリアル出力を確認するには:
+    echo   monitor.bat !COM_PORT!
+    echo.
+    echo ========================================
+    echo すべての処理が正常に完了しました！
+    echo ========================================
     echo.
 ) else (
     echo.
     echo ========================================
-    echo  UPLOAD FAILED!
+    echo [失敗] アップロード失敗
     echo ========================================
     echo.
-    echo Please try again with manual upload:
-    echo   upload.bat %COM_PORT%
+    echo 手動アップロードを試してください:
+    echo   upload.bat !COM_PORT!
+    echo.
+    echo よくある問題:
+    echo   - Pro Microがブートローダーモードでない
+    echo   - 間違ったCOMポート
+    echo   - USBケーブルがデータ転送非対応
     echo.
 )
 
